@@ -3,16 +3,32 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../services/auth";
 import { LogIn, Lock, User } from "lucide-react";
+import ReCAPTCHA from "react-google-recaptcha";
+
+
+const SITE_KEY = "6LdFzYcrAAAAAOtiKUtQSAoji9cRI26_QxMNYEPu";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaValue, setCaptchaValue] = useState(null);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const handleCaptchaChange = (value) => {
+    setCaptchaValue(value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!captchaValue) {
+      setError("Please complete the CAPTCHA to proceed.");
+      return;
+    }
+
+
     const success = await login(email, password);
     if (!success) {
       setError("Invalid credentials or not approved yet.");
@@ -72,6 +88,12 @@ export default function Login() {
               />
             </div>
           </div>
+
+          <ReCAPTCHA
+            sitekey={"6LdFzYcrAAAAAOtiKUtQSAoji9cRI26_QxMNYEPu"}
+            onChange={handleCaptchaChange}
+            className="mt-4"
+          />
 
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 

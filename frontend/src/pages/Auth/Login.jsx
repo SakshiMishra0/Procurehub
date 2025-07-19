@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
 import { Player } from "@lottiefiles/react-lottie-player";
+import ReCAPTCHA from "react-google-recaptcha";
 import successAnimation from "../../assets/success1.json";
 import bgImage from "../../assets/registering.jpg";
 
@@ -14,9 +15,16 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); 
+
+    if (!captchaToken) {
+      setError("Please verify the captcha first.");
+      return;
+    }
     setLoading(true);
     const user = await login(form.email, form.password);
     setLoading(false);
@@ -89,6 +97,13 @@ const Login = () => {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
+            />
+          </div>
+
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              sitekey="6LdFzYcrAAAAAOtiKUtQSAoji9cRI26_QxMNYEPu" // 👈 Replace with your site key
+              onChange={(token) => setCaptchaToken(token)}
             />
           </div>
 

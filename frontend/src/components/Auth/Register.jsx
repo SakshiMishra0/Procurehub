@@ -33,11 +33,18 @@ export default function Register() {
       phone,
       organization,
       address,
-      gstNumber,
+      gstin: gstNumber,
       password,
       role,
-      isVendor: role === "vendor", // optional based on your schema
+      // isVendor: role === "vendor", // optional based on your schema
     };
+
+    //adding4 lines of if statement
+    if(role==="vendor"){
+      userData.vendorItems = items
+      .split(",")
+      .map((item)=>({name: item.trim() , description: ""}));
+    }
 
     try {
       const res = await fetch("http://localhost:5000/api/auth/register", {
@@ -49,6 +56,10 @@ export default function Register() {
       });
 
       const data = await res.json();
+
+      //adding 2 extra lines
+      console.log("Response status:", res.status);
+      console.log("Response data:", data); 
 
       if (res.ok) {
         alert("Registration successful. Wait for cooperative approval.");

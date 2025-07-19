@@ -10,30 +10,20 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
-    role: "customer",
+    role: "",
     phone: "",
-    gstin: "",
+    department: "",
     shippingAddress: "",
     permanentAddress: "",
     organization: "",
-    vendorItems: [{ name: "", description: "" }],
     note: "",
+    
   });
 
+  const [roleSelected, setRoleSelected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleItemChange = (i, field, value) => {
-    const items = [...form.vendorItems];
-    items[i][field] = value;
-    setForm({ ...form, vendorItems: items });
-  };
-
-  const addItem = () =>
-    setForm({
-      ...form,
-      vendorItems: [...form.vendorItems, { name: "", description: "" }],
-    });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,8 +42,7 @@ const Register = () => {
       // Remove vendor-only fields for customers
       if (form.role !== "vendor") {
         delete payload.organization;
-        delete payload.gstin;
-        delete payload.vendorItems;
+        delete payload.gstin
       }
 
       // Clean flat address props
@@ -125,12 +114,16 @@ const Register = () => {
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
-          <Input
-            label="GSTIN"
-            value={form.gstin}
-            onChange={(e) => setForm({ ...form, gstin: e.target.value })}
-          />
-          <Input
+
+          {/* <input 
+          label="Department"
+          value={form.department}
+          onChange={(e)=>
+            setForm({ ...form, department: e.target.value})
+          }
+          /> */}
+          
+          {/* <Input
             label="Shipping Address"
             value={form.shippingAddress}
             onChange={(e) =>
@@ -143,23 +136,68 @@ const Register = () => {
             onChange={(e) =>
               setForm({ ...form, permanentAddress: e.target.value })
             }
-          />
+          /> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Role
             </label>
-            <select
+            {/* <select
               className="w-full border px-3 py-2 rounded text-black"
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
+            > */}
+
+            <select
+                className="w-full border px-3 py-2 rounded text-black"
+                value={form.role}
+                onChange={(e) => {
+                  setForm({ ...form, role: e.target.value });
+                  setRoleSelected(true); // Reveal fields after role is chosen
+                      }}
             >
+
+              <option value="" disabled hidden>
+                 Select a role
+              </option>
               <option value="customer">Customer</option>
               <option value="vendor">Vendor</option>
             </select>
           </div>
 
-          {form.role === "vendor" && (
+          {roleSelected && form.role === "customer" && (
+            <>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Department</label>
+                <input
+                    type="text"
+                    className="w-full border rounded p-2"
+                    placeholder="Department"
+                    value={form.department}
+                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                />
+            </div>
+            <Input
+            label="Permanent Address"
+            value={form.permanentAddress}
+            onChange={(e) =>
+              setForm({ ...form, permanentAddress: e.target.value })
+            }
+          />
+              <Input
+            label="Shipping Address"
+            value={form.shippingAddress}
+            onChange={(e) =>
+              setForm({ ...form, shippingAddress: e.target.value })
+            }
+          />
+           
+
+          </>
+          )}
+           
+          {roleSelected && form.role === "vendor" && (
             <>
               <Input
                 label="Organization Name"
@@ -167,43 +205,38 @@ const Register = () => {
                 onChange={(e) =>
                   setForm({ ...form, organization: e.target.value })
                 }
-              />
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vendor Items
-                </label>
-                {form.vendorItems.map((itm, i) => (
-                  <div key={i} className="flex gap-2 mt-2">
-                    <input
-                      type="text"
-                      placeholder="Item Name"
-                      className="w-1/2 border px-2 py-1 rounded text-black"
-                      value={itm.name}
-                      onChange={(e) =>
-                        handleItemChange(i, "name", e.target.value)
-                      }
-                    />
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      className="w-1/2 border px-2 py-1 rounded text-black"
-                      value={itm.description}
-                      onChange={(e) =>
-                        handleItemChange(i, "description", e.target.value)
-                      }
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="mt-2 text-blue-600 text-sm hover:underline"
-                >
-                  + Add More Items
-                </button>
-              </div>
-            </>
-          )}
+              /> <Input
+                    label="GSTIN"
+                    value={form.gstin}
+                    onChange={(e) => setForm({ ...form, gstin: e.target.value })}
+                 />
+    <Input
+            label="Permanent Address"
+            value={form.permanentAddress}
+            onChange={(e) =>
+              setForm({ ...form, permanentAddress: e.target.value })
+            }
+          />
+          {/* <Input
+            label="Shipping Address"
+            value={form.shippingAddress}
+            onChange={(e) =>
+              setForm({ ...form, shippingAddress: e.target.value })
+            }
+          /> */}
+
+  </>
+)}
+
+    {/* <div>
+      <label className="block text-sm font-medium mb-1">Department</label>
+         <input
+          type="text"
+          className="w-full border rounded p-2"
+          value={form.department}
+          onChange={(e) => setForm({ ...form, department: e.target.value })}
+        />
+    </div> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

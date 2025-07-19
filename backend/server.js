@@ -14,6 +14,7 @@ console.log("✅ MAIL_HOST from .env:", process.env.MAIL_HOST);  // <-- ADD THIS
 
 const app = express();
 
+require('dotenv').config();
 // CORS configuration
 const allowedOrigins = [process.env.FRONTEND_URL, "http://localhost:5173"];
 app.use(

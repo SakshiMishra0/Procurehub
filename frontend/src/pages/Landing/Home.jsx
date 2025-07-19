@@ -42,7 +42,7 @@ const Home = () => {
       </button>
 
       {/* 💎 Hero Overlay Without Logo */}
-      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-6 bg-black/60 backdrop-blur-sm text-white text-center">
+      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-6 bg-black/40 backdrop-blur-sm text-white text-center">
         <motion.h1
           className="text-5xl font-extrabold mb-4 tracking-tight"
           initial={{ opacity: 0, y: -40 }}
@@ -93,8 +93,8 @@ const Home = () => {
       </div>
 
       {/* 🌍 Scroll Reveal Below-the-Fold */}
-      <motion.div
-        className="min-h-screen flex flex-col justify-center items-center px-6 text-center"
+      <div
+        className="min-h-screen flex flex-col justify-center items-center px-6 text-center bg-black/40 backdrop-blur-sm text-white"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1, y: [40, 0] }}
         transition={{ duration: 1.2 }}
@@ -107,7 +107,7 @@ const Home = () => {
           all in one streamlined solution. Designed for powerhouses like NTPC
           and beyond.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 };
