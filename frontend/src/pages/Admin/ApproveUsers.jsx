@@ -3,7 +3,7 @@ import axios from "../../utils/api";
 
 const ApproveUsers = () => {
   const [users, setUsers] = useState([]);
-  const [selectedTab, setSelectedTab] = useState("customers"); // "vendors" or "customers"
+  const [selectedTab, setSelectedTab] = useState("customers");
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchPending = async () => {
@@ -39,17 +39,18 @@ const ApproveUsers = () => {
     fetchPending();
   }, []);
 
-  // Filter by selected tab
-  const filteredByTab = users.filter((u) =>
-    selectedTab === "customers" ? u.role === "customer" : u.role === "vendor"
-  );
+  // Count users by role
+  const customerCount = users.filter((u) => u.role === "customer").length;
+  const vendorCount = users.filter((u) => u.role === "vendor").length;
 
-  // Further filter by search query
-  const filteredUsers = filteredByTab.filter((u) =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.organization?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtered users for selected tab and search query
+  const filteredUsers = users
+    .filter((u) => u.role === selectedTab.slice(0, -1)) // remove 's' to match 'customer' or 'vendor'
+    .filter((u) =>
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.organization?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <div className="p-6">
@@ -62,30 +63,41 @@ const ApproveUsers = () => {
             setSelectedTab("customers");
             setSearchQuery("");
           }}
-          className={`px-4 py-2 rounded ${
+          className={`relative px-4 py-2 rounded transition ${
             selectedTab === "customers"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-800"
           }`}
         >
           Customers
+          {customerCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full px-2">
+              {customerCount}
+            </span>
+          )}
         </button>
+
         <button
           onClick={() => {
             setSelectedTab("vendors");
             setSearchQuery("");
           }}
-          className={`px-4 py-2 rounded ${
+          className={`relative px-4 py-2 rounded transition ${
             selectedTab === "vendors"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-800"
           }`}
         >
           Vendors
+          {vendorCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full px-2">
+              {vendorCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Search bar */}
+      {/* Search Bar */}
       <input
         type="text"
         placeholder={`Search ${selectedTab} by name, email or organization...`}
@@ -94,7 +106,7 @@ const ApproveUsers = () => {
         className="mb-6 px-4 py-2 w-full md:w-1/2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
 
-      {/* No users */}
+      {/* No Users Message */}
       {filteredUsers.length === 0 && (
         <p className="text-gray-600">No matching {selectedTab} found.</p>
       )}
@@ -105,7 +117,7 @@ const ApproveUsers = () => {
           key={u._id}
           className="mb-6 p-4 border rounded shadow-sm bg-white text-black flex flex-col lg:flex-row lg:items-start gap-6"
         >
-          {/* LEFT: User Info */}
+          {/* User Info */}
           <div className="flex-1 space-y-2">
             <p><strong>Name:</strong> {u.name}</p>
             <p><strong>Email:</strong> {u.email}</p>
@@ -118,7 +130,7 @@ const ApproveUsers = () => {
             {u.note && <p><strong>Note:</strong> {u.note}</p>}
           </div>
 
-          {/* MIDDLE: Vendor Items */}
+          {/* Vendor Items */}
           {u.role === "vendor" && u.vendorItems?.length > 0 && (
             <div className="flex-1">
               <strong>Vendor Items:</strong>
@@ -132,7 +144,7 @@ const ApproveUsers = () => {
             </div>
           )}
 
-          {/* RIGHT: Actions */}
+          {/* Action Buttons */}
           <div className="flex flex-col justify-start gap-2">
             <button
               onClick={() => approve(u._id)}
@@ -154,3 +166,4 @@ const ApproveUsers = () => {
 };
 
 export default ApproveUsers;
+
