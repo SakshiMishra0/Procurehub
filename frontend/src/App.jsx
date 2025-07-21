@@ -16,6 +16,7 @@ import Register from "./pages/Auth/Register";
 // Admin
 import AdminDashboard from "./pages/Admin/Dashboard";
 import ApproveUsers from "./pages/Admin/ApproveUsers";
+import ApprovedUsers from "./pages/Admin/ApprovedUsers"; // ✅ Imported ApprovedUsers
 import ManageRequests from "./pages/Admin/Requests";
 import ManageQuotes from "./pages/Admin/Quotes";
 import ManageBills from "./pages/Admin/Bills";
@@ -71,6 +72,16 @@ function AppRoutes() {
             <ProtectedRoute role="cooperative">
               <AdminLayout>
                 <ApproveUsers />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/approved-users"
+          element={
+            <ProtectedRoute role="cooperative">
+              <AdminLayout>
+                <ApprovedUsers /> {/* ✅ Route added here */}
               </AdminLayout>
             </ProtectedRoute>
           }

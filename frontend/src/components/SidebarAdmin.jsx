@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import axios from "../utils/api";
 import {
   Menu,
   X,
@@ -10,6 +11,7 @@ import {
   Quote,
   FileText,
   LogOut,
+  Users,
 } from "lucide-react";
 
 const SidebarAdmin = () => {
@@ -17,6 +19,7 @@ const SidebarAdmin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const handleLogout = () => {
     logout();
@@ -28,6 +31,20 @@ const SidebarAdmin = () => {
       location.pathname === path ? "bg-gray-800 font-semibold" : ""
     }`;
 
+  // ✅ Fetch number of pending users
+  useEffect(() => {
+    const fetchPending = async () => {
+      try {
+        const res = await axios.get("/auth/pending");
+        setPendingCount(res.data.length);
+      } catch (error) {
+        console.error("Error fetching pending users:", error);
+      }
+    };
+
+    fetchPending();
+  }, []);
+
   return (
     <div className="flex">
       <div
@@ -35,7 +52,7 @@ const SidebarAdmin = () => {
           isOpen ? "w-64" : "w-16"
         } min-h-screen bg-gray-900 text-white transition-all duration-300 flex flex-col`}
       >
-        {/* Header */}
+        {/* Sidebar Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
           {isOpen && <h1 className="text-xl font-bold">Admin</h1>}
           <button onClick={() => setIsOpen(!isOpen)}>
@@ -43,7 +60,7 @@ const SidebarAdmin = () => {
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Sidebar Navigation */}
         <nav className="flex-1 px-2 py-4 space-y-1">
           <Link
             to="/admin/dashboard"
@@ -61,9 +78,28 @@ const SidebarAdmin = () => {
             className={linkClass("/admin/approve")}
             title={!isOpen ? "Approve Users" : ""}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 relative">
               <UserCheck size={18} />
               {isOpen && <span>Approve Users</span>}
+
+              {/* ✅ Badge for pending users */}
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-500 text-xs rounded-full px-1.5 py-0.5 font-semibold">
+                  {pendingCount}
+                </span>
+              )}
+            </div>
+          </Link>
+
+          {/* ✅ No badge on Approved Users */}
+          <Link
+            to="/admin/approved-users"
+            className={linkClass("/admin/approved-users")}
+            title={!isOpen ? "Approved Users" : ""}
+          >
+            <div className="flex items-center space-x-2">
+              <Users size={18} />
+              {isOpen && <span>Approved Users</span>}
             </div>
           </Link>
 
@@ -101,7 +137,7 @@ const SidebarAdmin = () => {
           </Link>
         </nav>
 
-        {/* Logout */}
+        {/* Sidebar Logout */}
         <div className="p-4">
           <button
             onClick={handleLogout}
