@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-
 const {
   createRequest,
   getMyRequests,
@@ -15,35 +14,18 @@ const {
 
 const { protect } = require("../middleware/authMiddleware");
 
-// ==============================
-// 🔐 All Routes Are Protected
-// ==============================
+// Routes below require login
+router.post("/", protect, createRequest);                         // Create request (Customer)
+router.get("/mine", protect, getMyRequests);                      // Customer's requests
+router.get("/vendor-items", protect, getVendorItems);             // Vendor item list
 
-// 🔸 Customer: Create a new request
-router.post("/", protect, createRequest);
+router.get("/customer-requests", protect, getCustomerRequests);   // Admin: received requests
+router.get("/vendor-requests", protect, getVendorRequests);       // Vendor: published requests
 
-// 🔸 Customer: View their own requests
-router.get("/mine", protect, getMyRequests);
+router.put("/publish/:id", protect, publishRequest);              // Admin: manual publish
+router.put("/approve/:id", protect, approveRequest);              // Admin: approve request
+router.put("/reject/:id", protect, rejectRequest);                // Admin: reject request
 
-// 🔸 Customer: View available vendor items
-router.get("/vendor-items", protect, getVendorItems);
-
-// 🔸 Cooperative Admin: View customer-submitted (received) requests
-router.get("/customer-requests", protect, getCustomerRequests);
-
-// 🔸 Cooperative Admin: View requests published for vendors
-router.get("/vendor-requests", protect, getVendorRequests);
-
-// 🔸 Cooperative Admin: Publish a request (make it visible to vendors)
-router.put("/publish/:id", protect, publishRequest);
-
-// 🔸 Cooperative Admin: Approve a customer's request
-router.put("/approve/:id", protect, approveRequest);
-
-// 🔸 Cooperative Admin: Reject a customer's request
-router.put("/reject/:id", protect, rejectRequest);
-
-// 🔸 Get a single request by ID (should be placed at the end)
-router.get("/:id", protect, getRequestById);
+router.get("/:id", protect, getRequestById);                      // View single request (always last)
 
 module.exports = router;

@@ -8,59 +8,48 @@ const AvailableRequests = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchRequests = async () => {
       try {
-        const [reqRes, quoteRes] = await Promise.all([
-          axios.get("/requests/published"),
+        const [publishedRes, quotesRes] = await Promise.all([
+          axios.get("/requests/vendor-requests"),
           axios.get("/quotes/mine"),
         ]);
 
-        // FIX: Use quote.request (ObjectId) instead of quote.requestId (string)
-        const quotedRequestIds = new Set(
-          quoteRes.data.map((quote) => quote.request)
-        );
-
-        const available = reqRes.data.filter(
-          (req) => !quotedRequestIds.has(req._id)
-        );
+        const quotedIds = new Set(quotesRes.data.map(q => q.request));
+        const available = publishedRes.data.filter(req => !quotedIds.has(req._id));
 
         setRequests(available);
       } catch (err) {
-        console.error("❌ Error fetching requests:", err);
+        console.error("❌ Failed to fetch available requests:", err);
         setError("Failed to load available requests.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchRequests();
   }, []);
 
   const renderSkeleton = () =>
-    Array.from({ length: 3 }).map((_, idx) => (
-      <div
-        key={idx}
-        className="mb-4 p-4 border rounded shadow-sm bg-white animate-pulse"
-      >
+    Array.from({ length: 3 }).map((_, i) => (
+      <div key={i} className="p-4 mb-4 border rounded shadow bg-white animate-pulse">
         <div className="h-4 bg-gray-300 rounded w-1/3 mb-2" />
         <div className="h-3 bg-gray-300 rounded w-2/3 mb-1" />
-        <div className="h-3 bg-gray-300 rounded w-1/2 mb-4" />
+        <div className="h-3 bg-gray-300 rounded w-1/2 mb-3" />
         <div className="h-4 bg-gray-300 rounded w-24" />
       </div>
     ));
 
   return (
     <div className="p-6 max-w-4xl mx-auto text-black">
-      <h2 className="text-2xl font-bold mb-4 text-indigo-800 text-black">
-        Available Requests
-      </h2>
+      <h2 className="text-2xl font-bold mb-4 text-indigo-800">Available Requests</h2>
 
       {loading ? (
         renderSkeleton()
       ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : requests.length === 0 ? (
-        <p>No available requests at the moment.</p>
+        <p className="text-gray-600">No new requests at the moment.</p>
       ) : (
         requests.map((req) => (
           <div
@@ -69,7 +58,7 @@ const AvailableRequests = () => {
           >
             <p className="mb-2">
               <strong>Request ID:</strong>{" "}
-              <span className="text-blue-600">{req.requestId}</span>
+              <span className="text-blue-600">{req._id}</span>
             </p>
             <p className="font-medium text-gray-700">Items:</p>
             <ul className="ml-5 list-disc text-sm text-gray-600">
