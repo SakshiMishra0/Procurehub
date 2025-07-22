@@ -1,163 +1,144 @@
-const User = require("../models/User");
 const Request = require("../models/Request");
-const generateRequestId = require("../utils/generateRequestId");
-const transporter = require("../config/mailer");
-const VendorItem = require("../models/VendorItem");
+const User = require("../models/User");
+const nodemailer = require("nodemailer");
 
+// ============================
+// 📥 Create Request
+// ============================
 exports.createRequest = async (req, res) => {
   try {
-    const { items, remarks, isDraft } = req.body;
+    const { items, status = "pending" } = req.body;
     const customerId = req.user.id;
 
-    const reqCount = await Request.countDocuments();
-    const requestId = generateRequestId(reqCount + 1);
+    const customer = await User.findById(customerId);
+    if (!customer || customer.role !== "customer") {
+      return res.status(403).json({ error: "Only customers can create requests" });
+    }
 
-    const newRequest = await Request.create({
-      requestId,
+    const newRequest = new Request({
       customer: customerId,
       items,
-      remarks,
-      status: isDraft ? "draft" : "pending", // 'pending' means waiting for cooperative review
+      status,
     });
 
-    // Notify cooperative only if not draft
-    if (!isDraft) {
-      await transporter.sendMail({
-        to: process.env.COOP_EMAIL,
-        subject: "📢 New Request Pending Review",
-        html: `<p>Request ID: ${requestId}</p><p>Customer: ${req.user.email}</p>`,
-      });
-    }
-
+    await newRequest.save();
     res.status(201).json(newRequest);
-  } catch (err) {
-    console.error("❌ Error creating request:", err);
-    res.status(500).json({ message: "Error creating request" });
+  } catch (error) {
+    console.error("❌ Error creating request:", error);
+    res.status(500).json({ error: "Failed to create request" });
   }
 };
 
-exports.getMyRequests = async (req, res) => {
+// ============================
+// 📄 Get All Customer Requests (Received Tab)
+// ============================
+exports.getCustomerRequests = async (req, res) => {
   try {
-    const requests = await Request.find({ customer: req.user.id }).sort({
-      createdAt: -1,
-    });
-    res.json(requests);
-  } catch (err) {
-    console.error("❌ Error fetching requests:", err);
-    res.status(500).json({ message: "Error fetching requests" });
-  }
-};
-
-exports.getVendorItems = async (req, res) => {
-  try {
-    const items = await VendorItem.find().distinct("name");
-    res.json(items);
-  } catch (err) {
-    console.error("❌ Error fetching vendor items:", err);
-    res.status(500).json({ message: "Failed to load vendor items" });
-  }
-};
-
-exports.getAllRequests = async (req, res) => {
-  try {
-    const requests = await Request.find()
-      .populate("customer")
+    const requests = await Request.find({ status: { $ne: "draft" } })
+      .populate("customer", "name email")
       .sort({ createdAt: -1 });
-    res.json(requests);
-  } catch (err) {
-    console.error("❌ Error fetching all requests:", err);
-    res.status(500).json({ message: "Error fetching all requests" });
+
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("❌ Error fetching customer requests:", error);
+    res.status(500).json({ error: "Failed to fetch customer requests" });
   }
 };
 
-exports.getPublishedRequests = async (req, res) => {
+// ============================
+// 🚚 Get All Vendor Requests (Sent Tab)
+// ============================
+exports.getVendorRequests = async (req, res) => {
   try {
-    const requests = await Request.find({ status: "published" }).populate(
-      "customer"
-    );
-    res.json(requests);
-  } catch (err) {
-    console.error("❌ Error fetching published requests:", err);
-    res.status(500).json({ message: "Error fetching published requests" });
+    const requests = await Request.find({ status: "published" })
+      .populate("customer", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("❌ Error fetching vendor requests:", error);
+    res.status(500).json({ error: "Failed to fetch vendor requests" });
   }
 };
 
-exports.publishRequest = async (req, res) => {
-  try {
-    if (req.user.role !== "cooperative") {
-      return res
-        .status(403)
-        .json({ message: "Only cooperative can publish requests" });
-    }
-
-    const request = await Request.findByIdAndUpdate(
-      req.params.id,
-      { status: "published" },
-      { new: true }
-    ).populate("customer");
-
-    if (!request) return res.status(404).json({ message: "Request not found" });
-
-    const vendors = await User.find({ role: "vendor" });
-
-    for (let vendor of vendors) {
-      await transporter.sendMail({
-        to: vendor.email,
-        subject: "📢 New Request Available",
-        html: `<p>Hello Vendor,</p>
-               <p>A new request (<strong>${request.requestId}</strong>) has been published.</p>
-               <p>Customer: ${request.customer.email}</p>`,
-      });
-    }
-
-    res.json(request);
-  } catch (err) {
-    console.error("❌ Error publishing request:", err);
-    res.status(500).json({ message: "Failed to publish request" });
-  }
-};
-
-exports.getRequestById = async (req, res) => {
-  try {
-    const request = await Request.findById(req.params.id).populate("customer");
-
-    if (!request) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    res.json(request);
-  } catch (err) {
-    console.error("❌ Error fetching request by ID:", err);
-    res.status(500).json({ message: "Error fetching request" });
-  }
-};
+// ============================
+// ✅ Approve Request
+// ============================
 exports.approveRequest = async (req, res) => {
   try {
     const request = await Request.findByIdAndUpdate(
       req.params.id,
       { status: "approved" },
       { new: true }
-    );
-    if (!request) return res.status(404).json({ message: "Request not found" });
-    res.json(request);
-  } catch (err) {
-    console.error("❌ Error approving request:", err);
-    res.status(500).json({ message: "Failed to approve request" });
+    ).populate("customer", "email");
+
+    if (!request) return res.status(404).json({ error: "Request not found" });
+
+    await sendEmail(request.customer.email, "Request Approved", "Your request has been approved.");
+    res.status(200).json({ message: "Request approved", request });
+  } catch (error) {
+    console.error("❌ Error approving request:", error);
+    res.status(500).json({ error: "Failed to approve request" });
   }
 };
 
+// ============================
+// ❌ Reject Request
+// ============================
 exports.rejectRequest = async (req, res) => {
   try {
     const request = await Request.findByIdAndUpdate(
       req.params.id,
       { status: "rejected" },
       { new: true }
-    );
-    if (!request) return res.status(404).json({ message: "Request not found" });
-    res.json(request);
-  } catch (err) {
-    console.error("❌ Error rejecting request:", err);
-    res.status(500).json({ message: "Failed to reject request" });
+    ).populate("customer", "email");
+
+    if (!request) return res.status(404).json({ error: "Request not found" });
+
+    await sendEmail(request.customer.email, "Request Rejected", "Your request has been rejected.");
+    res.status(200).json({ message: "Request rejected", request });
+  } catch (error) {
+    console.error("❌ Error rejecting request:", error);
+    res.status(500).json({ error: "Failed to reject request" });
   }
 };
 
+// ============================
+// 📢 Publish Request
+// ============================
+exports.publishRequest = async (req, res) => {
+  try {
+    const request = await Request.findByIdAndUpdate(
+      req.params.id,
+      { status: "published" },
+      { new: true }
+    ).populate("customer", "email");
+
+    if (!request) return res.status(404).json({ error: "Request not found" });
+
+    await sendEmail(request.customer.email, "Request Published", "Your request has been published to vendors.");
+    res.status(200).json({ message: "Request published", request });
+  } catch (error) {
+    console.error("❌ Error publishing request:", error);
+    res.status(500).json({ error: "Failed to publish request" });
+  }
+};
+
+// ============================
+// 📧 Email Utility
+// ============================
+const sendEmail = async (to, subject, text) => {
+  const mailOptions = {
+    from: process.env.MAIL_FROM || "no-reply@procurehub.com",
+    to,
+    subject,
+    text,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Email sent to ${to}`);
+  } catch (err) {
+    console.error("❌ Email error:", err);
+  }
+};

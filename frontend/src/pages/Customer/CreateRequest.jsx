@@ -7,24 +7,43 @@ const CreateRequest = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [remarks, setRemarks] = useState("");
 
+  // 🔽 Fetch vendor items for datalist suggestions
   useEffect(() => {
-    axios.get("/requests/vendor-items").then((res) => setSuggestions(res.data));
+    const fetchVendorItems = async () => {
+      try {
+        const res = await axios.get("/requests/vendor-items");
+        setSuggestions(res.data); // Expected: Array of item names
+      } catch (err) {
+        console.error("Error fetching vendor items", err);
+      }
+    };
+
+    fetchVendorItems();
   }, []);
 
-  const handleChange = (i, field, value) => {
+  // 🔽 Handle item name and quantity change
+  const handleChange = (index, field, value) => {
     const newItems = [...items];
-    newItems[i][field] = value;
+    newItems[index][field] = value;
     setItems(newItems);
   };
 
+  // 🔽 Add new row for item
   const addItem = () => {
     setItems([...items, { name: "", quantity: 1 }]);
   };
 
+  // 🔽 Submit request to backend
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      await axios.post("/requests", { items, remarks, isDraft: false });
+      const res = await axios.post("/requests", {
+        items,
+        remarks,
+        isDraft: false,
+      });
+
       alert("✅ Request submitted!");
       setItems([{ name: "", quantity: 1 }]);
       setRemarks("");
@@ -45,6 +64,7 @@ const CreateRequest = () => {
         <h2 className="text-xl font-bold mb-4 text-center text-black">
           Create Purchase Request
         </h2>
+
         <form onSubmit={handleSubmit}>
           <div className="overflow-auto">
             <table className="w-full mb-4 text-sm border text-black">
@@ -62,9 +82,7 @@ const CreateRequest = () => {
                         list="vendorItems"
                         className="w-full border rounded p-1 text-black"
                         value={item.name}
-                        onChange={(e) =>
-                          handleChange(i, "name", e.target.value)
-                        }
+                        onChange={(e) => handleChange(i, "name", e.target.value)}
                         required
                       />
                     </td>
@@ -73,9 +91,7 @@ const CreateRequest = () => {
                         type="number"
                         className="w-full border rounded p-1 text-black"
                         value={item.quantity}
-                        onChange={(e) =>
-                          handleChange(i, "quantity", e.target.value)
-                        }
+                        onChange={(e) => handleChange(i, "quantity", e.target.value)}
                         min={1}
                         required
                       />
@@ -86,6 +102,7 @@ const CreateRequest = () => {
             </table>
           </div>
 
+          {/* Suggestions for item names */}
           <datalist id="vendorItems">
             {suggestions.map((s, idx) => (
               <option key={idx} value={s} />
