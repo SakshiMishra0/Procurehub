@@ -12,7 +12,7 @@ const CustomerDashboard = () => {
           ➕ Create New Request
         </Link>
         <Link
-          to="/customer/my-requests"
+          to="/customer/requests"
           className="p-4 bg-green-100 rounded shadow text-black"
         >
           📄 View My Requests

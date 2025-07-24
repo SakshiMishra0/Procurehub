@@ -5,6 +5,7 @@ const connectDB = require("./config/db");
 const User = require("./models/User");
 const bcrypt = require("bcryptjs");
 const requestRoutes = require("./routes/requestRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 // Load environment variables
 dotenv.config();
