@@ -15,7 +15,7 @@ const AvailableRequests = () => {
           axios.get("/quotes/mine"),
         ]);
 
-        const quotedIds = new Set(quotesRes.data.map(q => q.request));
+        const quotedIds = new Set(quotesRes.data.map(q => q.request._id));
         const available = publishedRes.data.filter(req => !quotedIds.has(req._id));
 
         setRequests(available);

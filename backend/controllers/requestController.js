@@ -1,10 +1,9 @@
+// ✅ UPDATED: requestController.js
 const Request = require("../models/Request");
 const User = require("../models/User");
+const Quote = require("../models/Quote");
 const nodemailer = require("nodemailer");
 
-// ============================
-// 📧 Utility: Send Email
-// ============================
 const transporter = nodemailer.createTransport({
   service: process.env.MAIL_SERVICE || "gmail",
   auth: {
@@ -15,14 +14,12 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async (to, subject, text) => {
   const recipients = Array.isArray(to) ? to.join(",") : to;
-
   const mailOptions = {
     from: process.env.MAIL_FROM || "no-reply@procurehub.com",
     to: recipients,
     subject,
     text,
   };
-
   try {
     await transporter.sendMail(mailOptions);
     console.log(`📨 Email sent to: ${recipients}`);
@@ -30,33 +27,6 @@ const sendEmail = async (to, subject, text) => {
     console.error("❌ Email sending failed:", err.message);
   }
 };
-
-// ============================
-// 📥 Create Request (Customer)
-// ============================
-// exports.createRequest = async (req, res) => {
-//   try {
-//     const { items, status = "pending" } = req.body;
-//     const customerId = req.user.id;
-
-//     const customer = await User.findById(customerId);
-//     if (!customer || customer.role !== "customer") {
-//       return res.status(403).json({ error: "Only customers can create requests." });
-//     }
-
-//     const newRequest = new Request({
-//       customer: customerId,
-//       items,
-//       status,
-//     });
-
-//     await newRequest.save();
-//     res.status(201).json(newRequest);
-//   } catch (error) {
-//     console.error("❌ Error creating request:", error);
-//     res.status(500).json({ error: "Failed to create request." });
-//   }
-// };
 
 const generateRequestId = async () => {
   const count = await Request.countDocuments();
@@ -69,21 +39,12 @@ exports.createRequest = async (req, res) => {
   try {
     const { items, status = "pending" } = req.body;
     const customerId = req.user.id;
-
     const customer = await User.findById(customerId);
     if (!customer || customer.role !== "customer") {
       return res.status(403).json({ error: "Only customers can create requests." });
     }
-
     const requestId = await generateRequestId();
-
-    const newRequest = new Request({
-      requestId,           // 🆕 required field
-      customer: customerId,
-      items,
-      status,
-    });
-
+    const newRequest = new Request({ requestId, customer: customerId, items, status });
     await newRequest.save();
     res.status(201).json(newRequest);
   } catch (error) {
@@ -92,10 +53,26 @@ exports.createRequest = async (req, res) => {
   }
 };
 
+exports.getVendorRequests = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const quoted = await Quote.find({ vendor: vendorId }).select("request");
+    const quotedRequestIds = quoted.map(q => q.request.toString());
 
-// ============================
-// 📄 Get Requests by Customer (For Admin)
-// ============================
+    const availableRequests = await Request.find({
+      status: "published",
+      _id: { $nin: quotedRequestIds },
+    })
+      .populate("customer", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(availableRequests);
+  } catch (error) {
+    console.error("❌ Error fetching vendor requests:", error);
+    res.status(500).json({ error: "Failed to fetch vendor requests." });
+  }
+};
+
 exports.getCustomerRequests = async (req, res) => {
   try {
     const requests = await Request.find({ status: { $nin: ["draft"] } })
@@ -109,25 +86,6 @@ exports.getCustomerRequests = async (req, res) => {
   }
 };
 
-// ============================
-// 📤 Get Published Requests (For Vendors)
-// ============================
-exports.getVendorRequests = async (req, res) => {
-  try {
-    const requests = await Request.find({ status: "published" })
-      .populate("customer", "name email")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(requests);
-  } catch (error) {
-    console.error("❌ Error fetching vendor requests:", error);
-    res.status(500).json({ error: "Failed to fetch vendor requests." });
-  }
-};
-
-// ============================
-// ✅ Approve Request (Auto-Publish)
-// ============================
 exports.approveRequest = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id).populate("customer", "email");
@@ -136,14 +94,12 @@ exports.approveRequest = async (req, res) => {
     request.status = "published";
     await request.save();
 
-    // Notify Customer
     await sendEmail(
       request.customer.email,
       "Request Approved",
       "Your request has been approved and published for vendors to view."
     );
 
-    // Notify Vendors
     const vendors = await User.find({ role: "vendor" });
     const vendorEmails = vendors.map((vendor) => vendor.email);
 
@@ -162,9 +118,6 @@ exports.approveRequest = async (req, res) => {
   }
 };
 
-// ============================
-// ❌ Reject Request
-// ============================
 exports.rejectRequest = async (req, res) => {
   try {
     const request = await Request.findByIdAndUpdate(
@@ -188,9 +141,6 @@ exports.rejectRequest = async (req, res) => {
   }
 };
 
-// ============================
-// 🟡 Manually Publish Request (Admin)
-// ============================
 exports.publishRequest = async (req, res) => {
   try {
     const request = await Request.findByIdAndUpdate(
@@ -201,14 +151,12 @@ exports.publishRequest = async (req, res) => {
 
     if (!request) return res.status(404).json({ error: "Request not found." });
 
-    // Notify Customer
     await sendEmail(
       request.customer.email,
       "Request Published",
       "Your request has been manually published to vendors."
     );
 
-    // Notify Vendors
     const vendors = await User.find({ role: "vendor" });
     const vendorEmails = vendors.map((vendor) => vendor.email);
 
@@ -227,9 +175,6 @@ exports.publishRequest = async (req, res) => {
   }
 };
 
-// ============================
-// 🔍 Get My Requests (Customer Dashboard)
-// ============================
 exports.getMyRequests = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -244,9 +189,6 @@ exports.getMyRequests = async (req, res) => {
   }
 };
 
-// ============================
-// 📦 Get Request by ID
-// ============================
 exports.getRequestById = async (req, res) => {
   try {
     const request = await Request.findById(req.params.id)
@@ -261,12 +203,8 @@ exports.getRequestById = async (req, res) => {
   }
 };
 
-// ============================
-// 🛠️ Get Vendor Items (Optional Placeholder)
-// ============================
 exports.getVendorItems = async (req, res) => {
   try {
-    // Placeholder for vendor item retrieval logic
     res.status(200).json({ message: "Vendor item list logic not implemented." });
   } catch (error) {
     console.error("❌ Error fetching vendor items:", error);

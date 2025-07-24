@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../utils/api";
 
 const SubmitQuote = () => {
-  const { requestId } = useParams(); // Mongo _id from URL
+  const { requestId } = useParams(); // This is the MongoDB _id
   const navigate = useNavigate();
 
   const [quotes, setQuotes] = useState([]);
@@ -14,17 +14,20 @@ const SubmitQuote = () => {
     const fetchRequest = async () => {
       try {
         const res = await axios.get(`/requests/${requestId}`);
-        setReadableRequestId(res.data.requestId);
+        const data = res.data;
+
+        setReadableRequestId(data.requestId);
+
         setQuotes(
-          res.data.items.map((item) => ({
-            itemId: item._id,
-            itemName: item.name,
+          data.items.map((item) => ({
+            name: item.name,
             price: "",
             remark: "",
           }))
         );
       } catch (err) {
         console.error("❌ Failed to fetch request:", err);
+        alert("Failed to load request.");
       } finally {
         setLoading(false);
       }
@@ -41,21 +44,33 @@ const SubmitQuote = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      await Promise.all(
-        quotes.map((quote) =>
-          axios.post(`/quotes/${encodeURIComponent(readableRequestId)}`, {
-            itemName: quote.itemName,
-            price: quote.price,
-            remark: quote.remark,
-          })
-        )
+      // Ensure prices are numbers
+      const preparedItems = quotes.map((q) => ({
+        name: q.name,
+        price: Number(q.price),
+        remark: q.remark,
+      }));
+
+      const token = localStorage.getItem("token");
+
+      await axios.post(
+        `/quotes/${encodeURIComponent(readableRequestId)}`,
+        { items: preparedItems },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
+
       alert("✅ Quotes submitted successfully!");
       navigate("/vendor/my-quotes");
     } catch (err) {
-      console.error("❌ Error submitting quotes:", err);
-      alert("Error submitting quotes. Try again.");
+      console.error("❌ Error submitting quotes:", err.response?.data || err.message);
+      alert("Error submitting quotes. Please check your input or try again later.");
     }
   };
 
@@ -63,14 +78,14 @@ const SubmitQuote = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto text-black">
-      <h2 className="text-2xl font-bold mb-6 text-indigo-800 text-black">Submit Quote</h2>
+      <h2 className="text-2xl font-bold mb-6 text-indigo-800">Submit Quote</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         {quotes.map((quote, index) => (
-          <div key={index} className="border p-4 rounded shadow bg-white text-black">
+          <div key={index} className="border p-4 rounded shadow bg-white">
             <p className="font-semibold mb-2">
-              🛒 Item: <span className="text-gray-800">{quote.itemName}</span>
+              🛒 Item: <span className="text-gray-800">{quote.name}</span>
             </p>
-            <label className="block mb-1 text-sm text-gray-600 text-black">
+            <label className="block mb-1 text-sm text-gray-600">
               Price (₹)
             </label>
             <input
@@ -78,23 +93,24 @@ const SubmitQuote = () => {
               value={quote.price}
               onChange={(e) => handleChange(index, "price", e.target.value)}
               placeholder="Enter price in INR"
-              className="w-full border rounded px-3 py-2 mb-3 focus:outline-none focus:ring text-black"
+              className="w-full border rounded px-3 py-2 mb-3 focus:outline-none focus:ring"
               required
             />
-            <label className="block mb-1 text-sm text-gray-600 text-black">
+            <label className="block mb-1 text-sm text-gray-600">
               Remark (optional)
             </label>
             <textarea
               value={quote.remark}
               onChange={(e) => handleChange(index, "remark", e.target.value)}
               placeholder="Any specific notes or delivery time..."
-              className="w-full border rounded px-3 py-2 h-20 focus:outline-none focus:ring text-black"
+              className="w-full border rounded px-3 py-2 h-20 focus:outline-none focus:ring"
             />
           </div>
         ))}
+
         <button
           type="submit"
-          className="bg-blue-600 text-white font-semibold px-6 py-2 rounded w-full hover:bg-blue-700 transition text-black"
+          className="bg-blue-600 text-white font-semibold px-6 py-2 rounded w-full hover:bg-blue-700 transition"
         >
           📤 Submit All Quotes
         </button>

@@ -2,17 +2,21 @@ const Quote = require("../models/Quote");
 const Request = require("../models/Request");
 const transporter = require("../config/mailer");
 
-// Submit a quote for a request item
+// ✅ Vendor submits a quote for all items of a request
 exports.submitQuote = async (req, res) => {
   try {
-    const { itemName, price, remark } = req.body;
+    const { items } = req.body; // [{ name, price, remark }]
     const { requestId } = req.params;
     const vendorId = req.user.id;
 
-    if (!itemName || !price) {
-      return res
-        .status(400)
-        .json({ message: "Item name and price are required." });
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Items are required." });
+    }
+
+    for (const item of items) {
+      if (!item.name || typeof item.price !== "number") {
+        return res.status(400).json({ message: "Each item must have a name and numeric price." });
+      }
     }
 
     const request = await Request.findOne({ requestId });
@@ -20,122 +24,119 @@ exports.submitQuote = async (req, res) => {
       return res.status(404).json({ message: "Request not found." });
     }
 
-    // Prevent duplicate quote for same item by same vendor
-    const alreadyQuoted = await Quote.findOne({
-      request: request._id,
-      vendor: vendorId,
-      "item.name": itemName,
-    });
+    // Validate all quoted item names exist in the request
+    const requestItemNames = request.items.map(i => i.name);
+    const invalidItems = items.filter(item => !requestItemNames.includes(item.name));
 
-    if (alreadyQuoted) {
-      return res
-        .status(409)
-        .json({ message: "Quote already submitted for this item." });
+    if (invalidItems.length > 0) {
+      return res.status(400).json({ message: "One or more quoted items do not exist in the request." });
+    }
+
+    // Check if a quote already exists for this vendor and request
+    const existingQuote = await Quote.findOne({ request: request._id, vendor: vendorId });
+    if (existingQuote) {
+      return res.status(400).json({ message: "You have already submitted a quote for this request." });
     }
 
     const quote = await Quote.create({
       request: request._id,
       requestId: request.requestId,
-      item: { name: itemName },
-      price,
-      remark,
+      items: items, // Correct key from schema
       vendor: vendorId,
-      status: "pending",
+      status: "pending"
     });
 
-    // Optional: Store quote reference in request
+    // Optional: link quote back to request
     await Request.findByIdAndUpdate(request._id, {
       $push: { quotes: quote._id },
     });
 
-    // Notify cooperative
+    // 📧 Email Notification
+    const itemListHtml = items.map(i => `<li>${i.name} - ₹${i.price}</li>`).join("");
+
     await transporter.sendMail({
       to: process.env.COOP_EMAIL,
-      subject: "💰 New Quote Submitted",
+      subject: "📝 New Quote Submitted",
       html: `
+        <h3>New Quote Submitted</h3>
         <p><strong>Request ID:</strong> ${request.requestId}</p>
-        <p><strong>Item:</strong> ${itemName}</p>
-        <p><strong>Price:</strong> ₹${price}</p>
+        <ul>${itemListHtml}</ul>
         <p><strong>Vendor:</strong> ${req.user.email}</p>
       `,
     });
 
-    res.status(201).json(quote);
+    return res.status(201).json(quote);
   } catch (err) {
-    console.error("❌ Error in submitQuote:", err);
-    res.status(500).json({ message: "Error submitting quote." });
+    console.error("❌ Error submitting quote:", err);
+    return res.status(500).json({ message: "Error while submitting quote." });
   }
 };
 
-// Get all quotes submitted by current vendor
+// ✅ Get vendor's submitted quotes
 exports.getMyQuotes = async (req, res) => {
   try {
-    const quotes = await Quote.find({ vendor: req.user.id })
-      .populate("request", "requestId")
+    const quotes = await Quote.find({ vendor: req.user._id })
+      .populate("request")
       .sort({ createdAt: -1 });
 
-    res.json(quotes);
+    res.status(200).json(quotes);
   } catch (err) {
-    console.error("❌ Error fetching vendor quotes:", err);
-    res.status(500).json({ message: "Error fetching your quotes." });
+    console.error("❌ Fetch My Quotes Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get all quotes (for cooperative/admin)
+// ✅ Admin: Get all quotes
 exports.getAllQuotes = async (req, res) => {
   try {
     const quotes = await Quote.find()
-      .populate("vendor", "name email")
-      .populate("request", "requestId items")
+      .populate("request vendor")
       .sort({ createdAt: -1 });
 
-    res.json(quotes);
+    res.status(200).json(quotes);
   } catch (err) {
-    console.error("❌ Error in getAllQuotes:", err);
-    res.status(500).json({ message: "Error fetching all quotes." });
+    console.error("❌ Fetch All Quotes Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Approve a quote
+// ✅ Approve a single quote & reject others of same request
 exports.approveQuote = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const quote = await Quote.findByIdAndUpdate(
-      id,
-      { status: "approved" },
-      { new: true }
+    const quote = await Quote.findById(id).populate("request");
+    if (!quote) return res.status(404).json({ message: "Quote not found" });
+
+    quote.status = "approved";
+    await quote.save();
+
+    await Quote.updateMany(
+      { request: quote.request._id, _id: { $ne: quote._id } },
+      { $set: { status: "rejected" } }
     );
 
-    if (!quote) {
-      return res.status(404).json({ message: "Quote not found." });
-    }
-
-    res.json(quote);
+    res.status(200).json({ message: "Quote approved" });
   } catch (err) {
-    console.error("❌ Error approving quote:", err);
-    res.status(500).json({ message: "Error approving quote." });
+    console.error("❌ Approve Quote Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Reject a quote
+// ✅ Reject a single quote
 exports.rejectQuote = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const quote = await Quote.findByIdAndUpdate(
-      id,
-      { status: "rejected" },
-      { new: true }
-    );
+    const quote = await Quote.findById(id);
+    if (!quote) return res.status(404).json({ message: "Quote not found" });
 
-    if (!quote) {
-      return res.status(404).json({ message: "Quote not found." });
-    }
+    quote.status = "rejected";
+    await quote.save();
 
-    res.json(quote);
+    res.status(200).json({ message: "Quote rejected" });
   } catch (err) {
-    console.error("❌ Error rejecting quote:", err);
-    res.status(500).json({ message: "Error rejecting quote." });
+    console.error("❌ Reject Quote Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
