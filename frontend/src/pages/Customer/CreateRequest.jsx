@@ -6,22 +6,34 @@ const CreateRequest = () => {
   const [items, setItems] = useState([{ name: "", quantity: 1 }]);
   const [suggestions, setSuggestions] = useState([]);
   const [remarks, setRemarks] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // 🔽 Fetch vendor items for datalist suggestions
   useEffect(() => {
     const fetchVendorItems = async () => {
       try {
         const res = await axios.get("/requests/vendor-items");
-        setSuggestions(res.data); // Expected: Array of item names
+
+        if (Array.isArray(res.data)) {
+          // ✅ Extract only the 'name' property for suggestions
+          const itemNames = res.data.map((item) => item.name);
+          setSuggestions(itemNames);
+        } else {
+          console.error("Expected array but got:", res.data);
+          setSuggestions([]);
+        }
       } catch (err) {
         console.error("Error fetching vendor items", err);
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchVendorItems();
   }, []);
 
-  // 🔽 Handle item name and quantity change
+  // 🔽 Handle item input
   const handleChange = (index, field, value) => {
     const newItems = [...items];
     newItems[index][field] = value;
@@ -33,18 +45,17 @@ const CreateRequest = () => {
     setItems([...items, { name: "", quantity: 1 }]);
   };
 
-  // 🔽 Submit request to backend
+  // 🔽 Submit the request
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await axios.post("/requests", {
+      await axios.post("/requests", {
         items,
         remarks,
         isDraft: false,
       });
 
-      alert("✅ Request submitted!");
+      alert("✅ Request submitted successfully!");
       setItems([{ name: "", quantity: 1 }]);
       setRemarks("");
     } catch (err) {
@@ -82,17 +93,21 @@ const CreateRequest = () => {
                         list="vendorItems"
                         className="w-full border rounded p-1 text-black"
                         value={item.name}
-                        onChange={(e) => handleChange(i, "name", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(i, "name", e.target.value)
+                        }
                         required
                       />
                     </td>
                     <td className="border p-2">
                       <input
                         type="number"
+                        min={1}
                         className="w-full border rounded p-1 text-black"
                         value={item.quantity}
-                        onChange={(e) => handleChange(i, "quantity", e.target.value)}
-                        min={1}
+                        onChange={(e) =>
+                          handleChange(i, "quantity", e.target.value)
+                        }
                         required
                       />
                     </td>
@@ -102,10 +117,10 @@ const CreateRequest = () => {
             </table>
           </div>
 
-          {/* Suggestions for item names */}
+          {/* ✅ Datalist suggestions */}
           <datalist id="vendorItems">
-            {suggestions.map((s, idx) => (
-              <option key={idx} value={s} />
+            {suggestions.map((item, idx) => (
+              <option key={idx} value={item} />
             ))}
           </datalist>
 
@@ -127,8 +142,9 @@ const CreateRequest = () => {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            disabled={loading}
           >
-            Submit Request
+            {loading ? "Loading items..." : "Submit Request"}
           </button>
         </form>
       </motion.div>

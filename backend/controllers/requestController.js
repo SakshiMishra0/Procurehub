@@ -34,6 +34,37 @@ const sendEmail = async (to, subject, text) => {
 // ============================
 // 📥 Create Request (Customer)
 // ============================
+// exports.createRequest = async (req, res) => {
+//   try {
+//     const { items, status = "pending" } = req.body;
+//     const customerId = req.user.id;
+
+//     const customer = await User.findById(customerId);
+//     if (!customer || customer.role !== "customer") {
+//       return res.status(403).json({ error: "Only customers can create requests." });
+//     }
+
+//     const newRequest = new Request({
+//       customer: customerId,
+//       items,
+//       status,
+//     });
+
+//     await newRequest.save();
+//     res.status(201).json(newRequest);
+//   } catch (error) {
+//     console.error("❌ Error creating request:", error);
+//     res.status(500).json({ error: "Failed to create request." });
+//   }
+// };
+
+const generateRequestId = async () => {
+  const count = await Request.countDocuments();
+  const paddedNumber = (count + 1).toString().padStart(4, "0");
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `REQ-${today}-${paddedNumber}`;
+};
+
 exports.createRequest = async (req, res) => {
   try {
     const { items, status = "pending" } = req.body;
@@ -44,7 +75,10 @@ exports.createRequest = async (req, res) => {
       return res.status(403).json({ error: "Only customers can create requests." });
     }
 
+    const requestId = await generateRequestId();
+
     const newRequest = new Request({
+      requestId,           // 🆕 required field
       customer: customerId,
       items,
       status,
@@ -57,6 +91,7 @@ exports.createRequest = async (req, res) => {
     res.status(500).json({ error: "Failed to create request." });
   }
 };
+
 
 // ============================
 // 📄 Get Requests by Customer (For Admin)
