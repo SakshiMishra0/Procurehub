@@ -35,7 +35,7 @@ const ManageQuotes = () => {
 
   // Group quotes by requestId
   const groupByRequest = quotes.reduce((acc, q) => {
-    const rid = q.request?.requestId || "unknown";
+    const rid = q?.request?.requestId || "unknown";
     if (!acc[rid]) acc[rid] = [];
     acc[rid].push(q);
     return acc;
@@ -44,10 +44,12 @@ const ManageQuotes = () => {
   return (
     <div className="p-6">
       <h2 className="text-xl font-bold mb-4 text-black">Manage Quotes</h2>
+
       {Object.entries(groupByRequest).map(([requestId, quoteGroup]) => {
-        // Find lowest price among quotes for this request
+        if (!quoteGroup || quoteGroup.length === 0) return null;
+
         const lowest = quoteGroup.reduce((min, q) =>
-          q.price < min.price ? q : min
+          q?.price < min?.price ? q : min
         );
 
         return (
@@ -57,36 +59,40 @@ const ManageQuotes = () => {
             </p>
 
             {quoteGroup.map((q) => (
-              <div key={q._id} className="p-2 border mt-2 rounded text-black">
+              <div
+                key={q._id}
+                className="p-2 border mt-2 rounded text-black bg-gray-100"
+              >
                 <p>
-                  <strong>Item:</strong> {q.item.name} — ₹{q.price}
+                  <strong>Item:</strong> {q?.item?.name || "N/A"} — ₹
+                  {q?.price || "N/A"}
                 </p>
                 <p>
-                  <strong>Vendor:</strong> {q.vendor?.name || "N/A"}
+                  <strong>Vendor:</strong> {q?.vendor?.name || "N/A"}
                 </p>
                 <p>
                   <strong>Status:</strong>{" "}
                   <span
                     className={
-                      q.status === "approved"
+                      q?.status === "approved"
                         ? "text-green-600"
-                        : q.status === "rejected"
+                        : q?.status === "rejected"
                         ? "text-red-600"
                         : "text-yellow-600"
                     }
                   >
-                    {q.status}
+                    {q?.status || "unknown"}
                   </span>
                 </p>
 
-                {q._id === lowest._id && q.status === "pending" && (
-                  <span className="text-green-600 font-semibold mr-2 text-black">
+                {q._id === lowest?._id && q?.status === "pending" && (
+                  <span className="text-green-600 font-semibold mr-2">
                     Lowest Quote ✅
                   </span>
                 )}
 
-                {q.status === "pending" && (
-                  <div className="mt-1">
+                {q?.status === "pending" && (
+                  <div className="mt-2">
                     <button
                       onClick={() => approve(q._id)}
                       className="mr-2 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"

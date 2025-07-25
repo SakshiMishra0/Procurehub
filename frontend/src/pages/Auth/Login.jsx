@@ -6,12 +6,14 @@ import { Player } from "@lottiefiles/react-lottie-player";
 import ReCAPTCHA from "react-google-recaptcha";
 import successAnimation from "../../assets/success1.json";
 import bgImage from "../../assets/registering.jpg";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -86,19 +88,26 @@ const Login = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="Password"
-              className="w-full border px-3 py-2 rounded text-black"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </div>
+        <div className="relative">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Password
+  </label>
+  <input
+    type={showPassword ? "text" : "password"}
+    placeholder="Password"
+    className="w-full border px-3 py-2 rounded text-black pr-10"
+    value={form.password}
+    onChange={(e) => setForm({ ...form, password: e.target.value })}
+    required
+  />
+  <span
+    className="absolute right-3 top-9 cursor-pointer text-gray-600"
+    onClick={() => setShowPassword((prev) => !prev)}
+  >
+    {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+  </span>
+</div>
+
 
           <div className="flex justify-center">
             <ReCAPTCHA
