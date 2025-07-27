@@ -7,6 +7,7 @@ const itemSchema = new mongoose.Schema(
     rate: { type: Number, default: 0 },
     gst: { type: Number, default: 0 },
     uom: { type: String, default: "pcs" },
+    department: { type: String, required: true,},               
   },
   { _id: false }
 );
@@ -36,6 +37,9 @@ const requestSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    visibleTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    originalRequestId: { type: mongoose.Schema.Types.ObjectId, ref: "Request" },
+    sentTo : [{type: mongoose.Schema.Types.ObjectId, ref:"user"}]
   },
   { timestamps: true }
 );

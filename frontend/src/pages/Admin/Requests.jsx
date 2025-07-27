@@ -12,12 +12,13 @@ const ManageRequests = () => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const [customerRes, vendorRes] = await Promise.all([
-          axios.get("/requests/customer-requests"),
-          axios.get("/requests/vendor-requests"),
-        ]);
-        setReceivedRequests(customerRes.data);
-        setSentRequests(vendorRes.data);
+        const [receivedRes, publishedSplitsRes] = await Promise.all([
+           axios.get("/requests/customer-requests"),
+           axios.get("/requests/published-splits"),
+           ]);
+        setReceivedRequests(receivedRes.data);
+        setSentRequests(publishedSplitsRes.data);
+        request.status === "published"
       } catch (err) {
         console.error("Failed to fetch requests", err);
       }

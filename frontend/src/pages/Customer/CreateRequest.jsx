@@ -3,7 +3,7 @@ import axios from "../../utils/api";
 import { motion } from "framer-motion";
 
 const CreateRequest = () => {
-  const [items, setItems] = useState([{ name: "", quantity: 1 }]);
+  const [items, setItems] = useState([{ name: "", quantity: 1, department: "" }]);
   const [suggestions, setSuggestions] = useState([]);
   const [remarks, setRemarks] = useState("");
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,6 @@ const CreateRequest = () => {
         const res = await axios.get("/requests/vendor-items");
 
         if (Array.isArray(res.data)) {
-          // ✅ Extract only the 'name' property for suggestions
           const itemNames = res.data.map((item) => item.name);
           setSuggestions(itemNames);
         } else {
@@ -42,21 +41,35 @@ const CreateRequest = () => {
 
   // 🔽 Add new row for item
   const addItem = () => {
-    setItems([...items, { name: "", quantity: 1 }]);
+    setItems([...items, { name: "", quantity: 1, department: "" }]);
   };
 
   // 🔽 Submit the request
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🔒 Validation before submission
+    const hasEmptyField = items.some(
+      (item) => !item.name || !item.quantity || !item.department
+    );
+    if (hasEmptyField) {
+      alert("❌ Please fill all fields (name, quantity, department) for every item.");
+      return;
+    }
+
     try {
-      await axios.post("/requests", {
+      console.log("Submitting items:", items, "Is Array:", Array.isArray(items));
+
+      const payload = {
         items,
         remarks,
         isDraft: false,
-      });
+      };
+
+      const res = await axios.post("/requests", payload);
 
       alert("✅ Request submitted successfully!");
-      setItems([{ name: "", quantity: 1 }]);
+      setItems([{ name: "", quantity: 1, department: "" }]);
       setRemarks("");
     } catch (err) {
       console.error("Submit error:", err);
@@ -83,6 +96,7 @@ const CreateRequest = () => {
                 <tr>
                   <th className="p-2 border">Item Name</th>
                   <th className="p-2 border">Quantity</th>
+                  <th className="p-2 border">Department</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,9 +107,7 @@ const CreateRequest = () => {
                         list="vendorItems"
                         className="w-full border rounded p-1 text-black"
                         value={item.name}
-                        onChange={(e) =>
-                          handleChange(i, "name", e.target.value)
-                        }
+                        onChange={(e) => handleChange(i, "name", e.target.value)}
                         required
                       />
                     </td>
@@ -105,9 +117,17 @@ const CreateRequest = () => {
                         min={1}
                         className="w-full border rounded p-1 text-black"
                         value={item.quantity}
-                        onChange={(e) =>
-                          handleChange(i, "quantity", e.target.value)
-                        }
+                        onChange={(e) => handleChange(i, "quantity", parseInt(e.target.value))}
+                        required
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <input
+                        type="text"
+                        className="w-full border rounded p-1 text-black"
+                        value={item.department}
+                        onChange={(e) => handleChange(i, "department", e.target.value)}
+                        placeholder="e.g. HR, Finance, IT"
                         required
                       />
                     </td>
@@ -117,7 +137,6 @@ const CreateRequest = () => {
             </table>
           </div>
 
-          {/* ✅ Datalist suggestions */}
           <datalist id="vendorItems">
             {suggestions.map((item, idx) => (
               <option key={idx} value={item} />

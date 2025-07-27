@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema(
     email: { type: String, unique: true },
     password: String,
     role: { type: String, enum: ["customer", "vendor", "cooperative"] },
-    department: { type: String },
+    department: { type: String , required: function (){
+      return this.role === "vendor";
+    }},
     isApproved: { type: Boolean, default: false },
     organization: String,
     gstin: String,

@@ -122,6 +122,7 @@ const ApproveUsers = () => {
             <p><strong>Name:</strong> {u.name}</p>
             <p><strong>Email:</strong> {u.email}</p>
             <p><strong>Role:</strong> {u.role}</p>
+            <p><strong>Department:</strong> {u.department || "N/A"}</p>
             {u.phone && <p><strong>Phone:</strong> {u.phone}</p>}
             {u.gstin && <p><strong>GSTIN:</strong> {u.gstin}</p>}
             {u.organization && <p><strong>Organization:</strong> {u.organization}</p>}
