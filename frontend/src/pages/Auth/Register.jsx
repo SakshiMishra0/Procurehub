@@ -221,6 +221,16 @@ const Register = () => {
                   setForm({ ...form, organization: e.target.value })
                 }
               />
+               <div>
+              <label className="block text-sm font-medium mb-1">Department</label>
+                <input
+                    type="text"
+                    className="w-full border rounded p-2"
+                    placeholder="Department"
+                    value={form.department}
+                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                />
+            </div>
               
               
               
