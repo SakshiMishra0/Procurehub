@@ -14,8 +14,8 @@ exports.submitQuote = async (req, res) => {
     }
 
     for (const item of items) {
-      if (!item.name || typeof item.price !== "number") {
-        return res.status(400).json({ message: "Each item must have a name and numeric price." });
+      if (!item.name || isNaN(item.quantity) || !item.uom || isNaN(item.rate) || isNaN(item.gstPercentage)) {
+        return res.status(400).json({ message: "Each item must have all required fields: itemName, quantity, unit, pricePerUnit, and gstPercentage.", });
       }
     }
 

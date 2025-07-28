@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import axios from "../../utils/api";
 
 const ManageQuotes = () => {
@@ -63,13 +64,7 @@ const ManageQuotes = () => {
                 key={q._id}
                 className="p-2 border mt-2 rounded text-black bg-gray-100"
               >
-                <p>
-                  <strong>Item:</strong> {q?.item?.name || "N/A"} — ₹
-                  {q?.price || "N/A"}
-                </p>
-                <p>
-                  <strong>Vendor:</strong> {q?.vendor?.name || "N/A"}
-                </p>
+                <p><strong>Vendor:</strong> {q?.vendor?.name || "N/A"}</p>
                 <p>
                   <strong>Status:</strong>{" "}
                   <span
@@ -84,6 +79,24 @@ const ManageQuotes = () => {
                     {q?.status || "unknown"}
                   </span>
                 </p>
+                <div className="mt-2">
+                  <p className="font-semibold">Quoted Items:</p>
+                  {Array.isArray(q.items) && q.items.length > 0 ? (
+                    q.items.map((item, index) => (
+                      <div key={index} className="ml-4 mb-1">
+                        <p>- <strong>{item.name}</strong></p>
+                        <p>  Quantity: {item.quantity} {item.unit}</p>
+                        <p>  Price/Unit: ₹{item.rate}</p>
+                        <p>  GST: {item.gstPercentage}%</p>
+                        <p>  Net Amount: ₹{item.netAmount}</p>
+                        {item.remark && <p>  Remark: {item.remark}</p>}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="ml-4 italic text-gray-500">No items provided.</p>
+                  )}
+                </div>
+                
 
                 {q._id === lowest?._id && q?.status === "pending" && (
                   <span className="text-green-600 font-semibold mr-2">
@@ -105,6 +118,11 @@ const ManageQuotes = () => {
                     >
                       Reject
                     </button>
+                    <Link to={`/admin/quotes/${q._id}/customize`}>
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Customize Quote
+                      </button>
+                    </Link>
                   </div>
                 )}
               </div>

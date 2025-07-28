@@ -8,42 +8,33 @@ const quoteSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Human-readable request identifier like "2025/2506/0002"
     requestId: {
       type: String,
       required: true,
-      trim: true,
+      trim: true, 
     },
 
-    // Array of quoted items with pricing and optional remarks
-    items: [
-      {
-        name: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        remark: {
-          type: String,
-          trim: true,
-          default: "",
-        },
-      },
-    ],
-
-    // Reference to the vendor submitting the quote
     vendor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
-    // Quote status tracked by admin
+    items: [
+      {
+        name: { type: String, required: true },
+        description: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        uom: { type: String, required: true },
+        rate: { type: Number, required: true },
+        amount: { type: Number, required: true },
+        gstPercentage: { type: Number, required: true },
+        gstAmount: { type: Number, required: true },
+        netAmount: { type: Number, required: true },
+        remark: { type: String },
+      },
+    ],
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -53,7 +44,6 @@ const quoteSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ Ensure each vendor can only submit one quote per request
 quoteSchema.index({ request: 1, vendor: 1 }, { unique: true });
 
 module.exports = mongoose.model("Quote", quoteSchema);

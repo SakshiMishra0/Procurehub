@@ -34,9 +34,14 @@ const MyQuotes = () => {
             <p className="font-semibold">Quoted Items:</p>
             {Array.isArray(quote.items) ? (
               quote.items.map((item, index) => (
-                <p key={index}>
-                  - {item.name} (₹{item.price}) {item.remark && `(Remark: ${item.remark})`}
-                </p>
+                <div key={index} className="pl-4 mb-1">
+                  <p>- <strong>{item.name}</strong></p>
+                  <p>  Quantity: {item.quantity} {item.unit}</p>
+                  <p>  Price/Unit: ₹{item.rate}</p>
+                  <p>  GST: {item.gstPercentage}%</p>
+                  <p>  Net Amount: {item.netAmount}</p>
+                  {item.remark && <p>  Remark: {item.remark}</p>}
+                </div>
               ))
             ) : (
               <p>No items found in this quote.</p>
