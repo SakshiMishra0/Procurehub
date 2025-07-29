@@ -53,6 +53,8 @@ const ManageQuotes = () => {
           q?.price < min?.price ? q : min
         );
 
+        const encodedRequestId = encodeURIComponent(requestId);
+
         return (
           <div key={requestId} className="mb-6 p-4 border rounded text-black">
             <p>
@@ -98,11 +100,7 @@ const ManageQuotes = () => {
                 </div>
                 
 
-                {q._id === lowest?._id && q?.status === "pending" && (
-                  <span className="text-green-600 font-semibold mr-2">
-                    Lowest Quote ✅
-                  </span>
-                )}
+                
 
                 {q?.status === "pending" && (
                   <div className="mt-2">
@@ -118,15 +116,21 @@ const ManageQuotes = () => {
                     >
                       Reject
                     </button>
-                    <Link to={`/admin/quotes/${q._id}/customize`}>
-                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        Customize Quote
-                      </button>
-                    </Link>
+
                   </div>
                 )}
               </div>
             ))}
+
+           <div className="mt-4">
+              <Link
+                to={`/admin/customize-quote/${encodeURIComponent(requestId)}`}
+                className="inline-block px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                Customize & Print
+              </Link>
+            </div>
+
           </div>
         );
       })}

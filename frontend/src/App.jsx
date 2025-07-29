@@ -20,6 +20,7 @@ import ApprovedUsers from "./pages/Admin/ApprovedUsers"; // ✅ Imported Approve
 import ManageRequests from "./pages/Admin/Requests";
 import ManageQuotes from "./pages/Admin/Quotes";
 import ManageBills from "./pages/Admin/Bills";
+import CustomizeQuote from "./pages/Admin/CustomizeQuote";
 
 
 // Customer
@@ -68,7 +69,7 @@ function AppRoutes() {
           }
         />
 
-
+         
 
         <Route
           path="/admin/approve"
@@ -110,6 +111,10 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/admin/customize-quote/:requestId" element={<CustomizeQuote />} />
+
+
         <Route
           path="/admin/bills"
           element={

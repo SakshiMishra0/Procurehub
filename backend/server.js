@@ -40,6 +40,8 @@ app.use("/api/requests", require("./routes/requestRoutes"));
 app.use("/api/quotes", require("./routes/quoteRoutes"));
 app.use("/api/bills", require("./routes/billRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
+app.use("/api/quote", require("./routes/quoteRoutes"));
+
 
 
 // Health check endpoint

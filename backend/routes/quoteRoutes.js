@@ -1,11 +1,13 @@
 const express = require("express");
 const router = express.Router();
+const quoteController = require("../controllers/quoteController");
 const {
   submitQuote,
   getMyQuotes,
   getAllQuotes,
   approveQuote,
   rejectQuote,
+  getQuotesByRequestId,
 } = require("../controllers/quoteController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -23,5 +25,9 @@ router.put("/approve/:id", protect, approveQuote);
 
 // Cooperative rejects a quote
 router.put("/reject/:id", protect, rejectQuote);
+
+router.get('/by-request/:requestId', quoteController.getQuotesByRequestId);
+
+
 
 module.exports = router;

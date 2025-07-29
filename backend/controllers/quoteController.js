@@ -140,3 +140,22 @@ exports.rejectQuote = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.getQuotesByRequestId = async (req, res) => {
+  try {
+    const requestId = decodeURIComponent(req.params.requestId); // important
+    console.log("Fetching quotes for requestId:", requestId);
+
+    const quotes = await Quote.find({ requestId });
+    if (!quotes || quotes.length === 0) {
+      return res.status(404).json({ message: "No quotes found for this request ID" });
+    }
+
+    res.status(200).json(quotes);
+  } catch (error) {
+    console.error("Error fetching quotes:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
