@@ -7,7 +7,7 @@ const itemSchema = new mongoose.Schema(
     rate: { type: Number, default: 0 },
     gst: { type: Number, default: 0 },
     uom: { type: String, default: "pcs" },
-    department: { type: String, required: true,},               
+    department: { type: String, required: true,},             
   },
   { _id: false }
 );
@@ -30,16 +30,22 @@ const requestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "pending", "published", "approved", "billed"],
-      default: "draft",
+      enum: [ "pending",  "approved","rejected", "published","quote_uploaded_by_admin", "billed"],
+      default: "pending",
     },
     remarks: {
       type: String,
       trim: true,
     },
+    adminQuoteFile: {
+        type: String,
+    },
+    
     visibleTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     originalRequestId: { type: mongoose.Schema.Types.ObjectId, ref: "Request" },
-    sentTo : [{type: mongoose.Schema.Types.ObjectId, ref:"user"}]
+    sentTo : [{type: mongoose.Schema.Types.ObjectId, ref:"user"}],
+   
+     adminQuoteFile: { type: String, default: "" },
   },
   { timestamps: true }
 );

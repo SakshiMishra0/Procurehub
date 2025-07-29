@@ -18,7 +18,6 @@ const ManageRequests = () => {
            ]);
         setReceivedRequests(receivedRes.data);
         setSentRequests(publishedSplitsRes.data);
-        request.status === "published"
       } catch (err) {
         console.error("Failed to fetch requests", err);
       }
@@ -37,6 +36,30 @@ const ManageRequests = () => {
     } catch (err) {
       console.error(`❌ ${action} error:`, err);
       alert(`Failed to ${action} request.`);
+    }
+  };
+
+   const handleQuoteUpload = async (e, requestId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("quote", file);
+    formData.append("requestId", requestId);
+
+    try {
+      await axios.post(`/requests/admin/upload-quote/${requestId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      alert("✅ Quote uploaded successfully!");
+      setReceivedRequests((prev) =>
+        prev.map((r) =>
+          r._id === requestId ? { ...r, adminQuoteFile: file.name } : r
+        )
+      );
+    } catch (err) {
+      console.error("❌ Upload error:", err);
+      alert("Failed to upload quote.");
     }
   };
 
@@ -89,7 +112,7 @@ const ManageRequests = () => {
             >
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  Request ID: <span className="text-blue-600">{r.requestId}</span>
+                  Request ID:{""} <span className="text-blue-600">{r.requestId}</span>
                 </h3>
                 <span
                   className={`px-3 py-1 rounded text-sm font-semibold ${
@@ -115,7 +138,7 @@ const ManageRequests = () => {
               <ul className="text-sm list-disc list-inside text-gray-700 mb-3">
                 {r.items.map((item, idx) => (
                   <li key={idx}>
-                    {item.name} — Qty: <span className="font-medium">{item.quantity}</span>
+                    {item.name} — Qty:{""} <span className="font-medium">{item.quantity}</span>
                   </li>
                 ))}
               </ul>
@@ -147,6 +170,35 @@ const ManageRequests = () => {
                       </button>
                     </>
                   )}
+
+
+
+                 {r.status === "published" && !r.adminQuoteFile && (
+                    <div className="flex flex-col">
+                      <label className="text-sm text-gray-600 mb-1">
+                        Upload Admin Quote:
+                      </label>
+                      <input
+                        type="file"
+                        // accept=".pdf,.doc,.docx,.jpg,.png"
+                        onChange={(e) => handleQuoteUpload(e, r._id)}
+                        className="border px-3 py-1 rounded text-sm"
+                      />
+                    </div>
+                  )}
+
+                 
+                  {r.status === "published" && r.adminQuoteFile && (
+                    <a
+                      href={`http://localhost:5000/uploads/${r.adminQuoteFile}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline text-sm mt-2"
+                    >
+                      📄 Download Uploaded Quote
+                    </a>
+                  )}
+
                 </div>
               )}
             </motion.div>

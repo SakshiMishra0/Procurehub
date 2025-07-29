@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
 const {
   createRequest,
   getMyRequests,
@@ -11,11 +13,25 @@ const {
   approveRequest,
   rejectRequest,
   getPublishedSplitRequests,
+  uploadAdminQuote,
+  
 } = require("../controllers/requestController");
 
 const { protect } = require("../middleware/authMiddleware");
 
-// Routes below require login
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/quotes/"); 
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage: storage });
+
+
 router.post("/", protect, createRequest);                         // Create request (Customer)
 router.get("/mine", protect, getMyRequests);                      // Customer's requests
 router.get("/vendor-items", protect, getVendorItems);             // Vendor item list
@@ -36,6 +52,17 @@ router.put("/publish/:id", protect, publishRequest);              // Admin: manu
 router.put("/approve/:id", protect, approveRequest);              // Admin: approve request
 router.put("/reject/:id", protect, rejectRequest);                // Admin: reject request
 
-router.get("/:id", protect, getRequestById);                      // View single request (always last)
+router.get("/:id", protect, getRequestById);
+// router.post(
+//   "/upload-quote",
+//   upload.single("quote"),
+//   uploadAdminQuote
+// );   
+
+router.post(
+  "/admin/upload-quote/:requestId",
+  upload.single("quote"),
+  uploadAdminQuote
+);
 
 module.exports = router;

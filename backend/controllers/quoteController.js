@@ -1,6 +1,7 @@
 const Quote = require("../models/Quote");
 const Request = require("../models/Request");
 const transporter = require("../config/mailer");
+const Item = require("../models/Item");
 
 // ✅ Vendor submits a quote for all items of a request
 exports.submitQuote = async (req, res) => {
@@ -158,4 +159,21 @@ exports.getQuotesByRequestId = async (req, res) => {
   }
 };
 
+exports.getReceivedQuotes = async (req, res) => {
+  try {
+    const customerId = req.user._id;
 
+    const requests = await Request.find({ customer: customerId });
+    const requestIds = requests.map((req) => req._id);
+
+    const quotes = await Quote.find({ request: { $in: requestIds } })
+      .populate("vendor", "name")
+      .populate("items.item", "name")
+      .populate("request", "adminQuoteFile requestId"); 
+
+    res.json(quotes);
+  } catch (error) {
+    console.error("❌ Error fetching received quotes:", error);
+    res.status(500).json({ error: "Failed to fetch quotes" });
+  }
+};

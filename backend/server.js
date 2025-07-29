@@ -6,6 +6,9 @@ const User = require("./models/User");
 const bcrypt = require("bcryptjs");
 const requestRoutes = require("./routes/requestRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const path = require("path");
+
+
 
 // Load environment variables
 dotenv.config();
@@ -35,12 +38,15 @@ app.use(
 app.use(express.json());
 
 // Routes
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/requests", require("./routes/requestRoutes"));
 app.use("/api/quotes", require("./routes/quoteRoutes"));
 app.use("/api/bills", require("./routes/billRoutes"));
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/quote", require("./routes/quoteRoutes"));
+
+
 
 
 

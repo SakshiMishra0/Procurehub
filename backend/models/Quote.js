@@ -22,6 +22,7 @@ const quoteSchema = new mongoose.Schema(
 
     items: [
       {
+        item: { type: mongoose.Schema.Types.ObjectId, ref: "Item" },
         name: { type: String, required: true },
         description: { type: String, required: true },
         quantity: { type: Number, required: true },
